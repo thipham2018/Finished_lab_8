@@ -2,4 +2,15 @@
 <resources>
     <string name="hello_world">Bonjour le monde</string>
     <string name="button_text">Je suis un bouton</string>
+    <string name="toastmassage">L’étiquette a été mise à jour</string>
+    <string name="textview">J’adore Android</string>
+    <string name="text">J’adore Android</string>
+    <string name="buttom">Appuyez-moi</string>
+    <string name="checkbox">Regarde ça</string>
+    <string name="switch1">allumer/éteindre</string>
+    <string name="snackbarmassage">La case à cocher est maintenant</string>
+    <string name="offon">défaire</string>
+    <string name="flag">flag</string>
+    <string name="off">OFF</string>
+    <string name="on">ON</string>
 </resources>
