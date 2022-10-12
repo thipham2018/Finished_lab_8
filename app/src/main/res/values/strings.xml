@@ -1,23 +1,18 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <string name="app_name" translatable="false">AndroidLabs</string>
+    <string name="header" translatable="false">CST2335 Lab4</string>
     <string name="hello_world">Hello World</string>
     <string name="button_text">"I\'m a button!"</string>
 
-    <string name="switch1">switch on/off</string>
-    <string name="flag">flag</string>
-    <string name="off">OFF</string>
-    <string name="on">ON</string>
-    <string name="buttom">Press Me</string>
-    <string name="checkbox">Check this out</string>
-    <string name="text">I love Android</string>
-    <string name="toastmassage">Label has been updated</string>
-    <string name="snackbarmassage">The checkbox is now</string>
-    <string name="offon">undo</string>
 
-    <string name="nameview">Enter your name</string>
-    <string name="buttontext">Next</string>
-    <string name="textview">Welcome!</string>
-    <string name="buttoncall" >DONT CALL ME THAT</string>
-    <string name="buttonthank">THANK YOU</string>
-    <string name="nametext">Name</string>
+
+
+    <string name="listview">the list view</string>
+    <string name="edittext">Type here</string>
+    <string name="toggle">Urgent</string>
+    <string name="myButton">ADD</string>
+    <string name="textHere">""</string>
+
+
 </resources>
