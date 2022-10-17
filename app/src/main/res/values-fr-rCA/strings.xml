@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello_world">Bonjour le monde</string>
-    <string name="button_text">Je suis un bouton</string>
-
-
-
-
-
-
+    <string name="app_name" translatable="false">CST2335 Lab5</string>
+    <string name="header" translatable="false">CST2335 Lab4</string>
     <string name="listview">La vue liste</string>
     <string name="edittext">écrivez ici</string>
     <string name="toggle">basculer</string>
