@@ -1,229 +1,211 @@
 package com.example.androidlabs;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import android.annotation.SuppressLint;
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.text.Html;
+import android.util.Log;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+import android.widget.VideoView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.HashMap;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ListAdapter;
-import android.widget.ListView;
-import android.widget.Switch;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
-import java.security.PrivateKey;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity {
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.HashMap;
+import com.example.androidlabs.Callback;
 
-    private ArrayList<TODO> elements;
-    private MyListAdapter myAdapter;
-    TODO todo;
-    SQLiteDatabase db;
-
+public class MainActivity extends AppCompatActivity implements Callback {
+    private VideoView videoView;
+    private ImageView imageView;
+    private String route = "https://cataas.com/cat";
+    private String root = "https://cataas.com";
+    private String url = "https://cataas.com/cat?json=true";
+    private String res;
+    private HashMap<String, Bitmap> picList = new HashMap<>();
+    private ProgressBar progressBar;
+    private CatImages catImages = new CatImages();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        imageView = findViewById(R.id.imageView2);
+        progressBar = findViewById(R.id.progressBar);
+        progressBar.setMax(2000);
+        startAsyncTask();
+    }
 
-        EditText editText = findViewById(R.id.editText);
-        SwitchCompat switchCompat = findViewById(R.id.switch2);
-        Button addButton = findViewById(R.id.myButton);
+    private void startAsyncTask() {
+        catImages= new CatImages();
+        catImages.callback = (Callback) this;
+        catImages.execute(url);
+    }
 
-        elements = new ArrayList<>();
+    @Override
+    public void callBack(String result) {
+        startAsyncTask();
+    }
+    private class CatImages extends AsyncTask<String, Integer, Bitmap> {
+        public Callback callback;
+        StringBuilder stringBuilder = new StringBuilder();
+        private Bitmap bitmap;
+        @Override
+        protected Bitmap doInBackground(String... strings) {
+            URL url = null;
+            try {
+                url = new URL(strings[0]);
+                URLConnection urlConnection = url.openConnection();
+                InputStreamReader inputStreamReader = new InputStreamReader(urlConnection.getInputStream());
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String line = "";
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line + "\n");
+                }
+                String jsonStr = stringBuilder.toString();
+                JSONObject obj = new JSONObject(jsonStr);
+                if (picList.containsKey(obj.getString("_id"))) {
+                    res = "id " + obj.getString("_id");
+                    bitmap = picList.get(obj.getString("_id"));
+                } else {
+                    url = new URL(root+obj.getString("url"));
+                    InputStream inputStream = url.openConnection().getInputStream();
+                    bitmap = BitmapFactory.decodeStream(inputStream);
+                    picList.put(obj.getString("_id"), bitmap);
+                }
+                bufferedReader.close();
+                Log.v("TAG", "publish progress");
+                //  publishProgress(res);
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-        loadDataFromDatabase();
-
-        addButton.setOnClickListener(click -> {
-            String listItem = editText.getText().toString();
-            todo = new TODO();
-            todo.setTodoText(listItem);
-            todo.setUrgent(switchCompat.isChecked());
-
-            //add to db & get new ID
-            ContentValues newRowValues = new ContentValues();
-
-            //Put String into the Items column
-            newRowValues.put(MyOpener.COL_ITEMS, listItem);
-            newRowValues.put(MyOpener.COL_URGENT, switchCompat.isChecked());
-
-            //insert into db
-            long newID = db.insert(MyOpener.TABLE_NAME, null, newRowValues);
-
-            //Create entry item
-            //adding third parameter to constructor
-            todo = new TODO(listItem, newID, switchCompat.isChecked());
-
-            elements.add(todo);
-
-            editText.setText("");
-            switchCompat.setChecked(false);
-            myAdapter.notifyDataSetChanged();
-        });
-
-
-
-        ListView myList = findViewById(R.id.thelistView);
-        myList.setAdapter(myAdapter = new MyListAdapter());
-
-        myList.setOnItemClickListener((parent, view, pos, id) -> {
-                });
-        myList.setOnItemLongClickListener((p, b, pos, id) -> {
-                View newView = getLayoutInflater().inflate(R.layout.item_list, null);
-                TextView tView = newView.findViewById(R.id.textlist);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-                alertDialogBuilder.setTitle("Do you want to delete this?")
-
-                    .setMessage("The selected row is: " + pos +
-                            "\n " + elements.get(pos).todoText)
-
-                    .setPositiveButton("Yes", (click, arg) -> {
-                        elements.remove(elements.get(pos));
-                        myAdapter.notifyDataSetChanged();
-                    })
-
-                    .setNegativeButton("No", (click, arg) -> {
-                    })
-                    .setView(newView)
-
-                    .create().show();
-                    return true;
-                      });
-
-                 }
-    private  void loadDataFromDatabase(){
-            MyOpener dbOpener = new MyOpener(this);
-            db = dbOpener.getWritableDatabase();
-            String[] columns = {MyOpener.COL_ID, MyOpener.COL_ITEMS, MyOpener.COL_URGENT};
-
-
-            Cursor results = db.query(false, MyOpener.TABLE_NAME, columns, null, null, null,
-                null, null, null);
-                int nameCoLIndex = results.getColumnIndex(MyOpener.COL_ITEMS);
-                int idCoIndex = results.getColumnIndex(MyOpener.COL_ID);
-                int urgentCoLIndex = results.getColumnIndex(MyOpener.COL_URGENT);
-
-                while (results.moveToNext()){
-                     String name = results.getString(nameCoLIndex);
-                     long id = results.getLong(idCoIndex);
-                     boolean urgent = (results.getInt(urgentCoLIndex) !=0);
-                     elements.add(new TODO(name, id, urgent));
-                  }
-                      }
-                protected void updateContact(TODO c){
-                    ContentValues updatedValues = new ContentValues();
-                    updatedValues.put(MyOpener.COL_ITEMS, c.getTodoText());
-                    db.update(MyOpener.TABLE_NAME, updatedValues, MyOpener.COL_ID + "= ?", new String[]{Long.toString(c.getId())});
+            //update progress bar
+            for (int i=0;i<100;i++){
+                publishProgress(20);
+                try {
+                    Thread.sleep(30);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return bitmap;
         }
 
-                protected void deleteContact(TODO c) {
-                    db.delete(MyOpener.TABLE_NAME, MyOpener.COL_ID + "= ?", new String[]{Long.toString(c.getId())});
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            if (bitmap !=null){
+                imageView.setImageBitmap(bitmap);
+                Log.v("TAG", "Done set picture");
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                callback.callBack(url);
+            }
+            else{
+                Toast.makeText(MainActivity.this, "Bitmap is null", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            if (progressBar.getProgress() == 2000) progressBar.setProgress(0);
+            progressBar.setProgress(progressBar.getProgress()+values[0]);
+        }
     }
 
 
-
-
-
-    private class MyListAdapter extends BaseAdapter {
-
-        public int getCount() {
-            return elements.size();
-        }
-
-        public TODO getItem(int position) {
-            return elements.get(position);
-        }
-
-        public long getItemId(int position) {
-            return (long) position;
-        }
-
-        public View getView(int position, View old, ViewGroup parent) {
-
-            View newView = old;
-            LayoutInflater inflater = getLayoutInflater();
-
-            //make a new row:
-            if (newView == null) {
-                newView = inflater.inflate(R.layout.item_list, parent, false);
-            }
-
-            //set the text should be for this row:
-            TextView tView = newView.findViewById(R.id.textlist);
-            tView.setText(getItem(position).todoText);
-
-            if (getItem(position).isUrgent) {
-                tView.setBackgroundColor(Color.RED);
-                tView.setTextColor(Color.WHITE);
-            } else {
-                tView.setBackgroundColor(Color.WHITE);
-                tView.setTextColor(Color.GRAY);
-            }
-
-            return newView;
-        }
-    }
 }
 
-    class TODO {
-        String todoText;
-        boolean isUrgent;
-        protected long id;
-        public TODO(){
 
-        }
-        public  TODO(String n, long i){
-            todoText = n;
-            id = i;
-        }
-        public TODO(String n, long i, boolean urgent) {
-            todoText = n;
-            id = i;
-            isUrgent = urgent;
-        }
 
-        public void update(String n){
-            todoText = n;
-        }
-        public String getTodoText() {
 
-            return todoText;
-        }
-        public long getId(){
-            return  id;
-        }
 
-        public void setTodoText(String todoText) {
 
-            this.todoText = todoText;
-        }
 
-        public boolean isUrgent() {
 
-            return isUrgent;
-        }
 
-        public void setUrgent(boolean urgent) {
 
-            isUrgent = urgent;
-        }
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
