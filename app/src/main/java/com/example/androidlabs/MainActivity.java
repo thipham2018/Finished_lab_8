@@ -1,48 +1,19 @@
 package com.example.androidlabs;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Html;
-import android.util.Log;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.Toast;
-import android.widget.VideoView;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.os.Handler;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.VideoView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -53,159 +24,105 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.HashMap;
-import com.example.androidlabs.Callback;
+import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements Callback {
-    private VideoView videoView;
-    private ImageView imageView;
-    private String route = "https://cataas.com/cat";
-    private String root = "https://cataas.com";
-    private String url = "https://cataas.com/cat?json=true";
-    private String res;
-    private HashMap<String, Bitmap> picList = new HashMap<>();
-    private ProgressBar progressBar;
-    private CatImages catImages = new CatImages();
+public class MainActivity extends AppCompatActivity {
+    private String url = "https://swapi.dev/api/people/?format=json";
+    private ArrayList<Characters> characterList = new ArrayList<>();
+    private TextView textView;
+    private ListView listView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        imageView = findViewById(R.id.imageView2);
-        progressBar = findViewById(R.id.progressBar);
-        progressBar.setMax(2000);
-        startAsyncTask();
+        new StarWars().execute(url);
     }
 
-    private void startAsyncTask() {
-        catImages= new CatImages();
-        catImages.callback = (Callback) this;
-        catImages.execute(url);
-    }
+    private class StarWars extends AsyncTask<String, String, ArrayList<Characters>> {
+        private JSONArray charList = new JSONArray();
 
-    @Override
-    public void callBack(String result) {
-        startAsyncTask();
-    }
-    private class CatImages extends AsyncTask<String, Integer, Bitmap> {
-        public Callback callback;
-        StringBuilder stringBuilder = new StringBuilder();
-        private Bitmap bitmap;
         @Override
-        protected Bitmap doInBackground(String... strings) {
-            URL url = null;
+        protected ArrayList<Characters> doInBackground(String... strings) {
+            StringBuilder stringBuilder = new StringBuilder();
             try {
-                url = new URL(strings[0]);
+                URL url = new URL(strings[0]);
                 URLConnection urlConnection = url.openConnection();
-                InputStreamReader inputStreamReader = new InputStreamReader(urlConnection.getInputStream());
+                InputStream inputStream = urlConnection.getInputStream();
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
                 String line = "";
                 while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line + "\n");
+                    stringBuilder.append(line);
                 }
                 String jsonStr = stringBuilder.toString();
                 JSONObject obj = new JSONObject(jsonStr);
-                if (picList.containsKey(obj.getString("_id"))) {
-                    res = "id " + obj.getString("_id");
-                    bitmap = picList.get(obj.getString("_id"));
-                } else {
-                    url = new URL(root+obj.getString("url"));
-                    InputStream inputStream = url.openConnection().getInputStream();
-                    bitmap = BitmapFactory.decodeStream(inputStream);
-                    picList.put(obj.getString("_id"), bitmap);
+                charList = (JSONArray) obj.get("results");
+                for (int i = 0; i < charList.length(); i++) {
+                    JSONObject jObj = (JSONObject) charList.get(i);
+                    characterList.add(new Characters(
+                                    jObj.getString("name"),
+                                    jObj.getString("height"),
+                                    jObj.getString("mass"),
+                                    jObj.getString("hair_color"),
+                                    jObj.getString("skin_color"),
+                                    jObj.getString("eye_color"),
+                                    jObj.getString("birth_year"),
+                                    jObj.getString("gender"),
+                                    jObj.getString("homeworld")
+                            )
+                    );
                 }
                 bufferedReader.close();
-                Log.v("TAG", "publish progress");
-                //  publishProgress(res);
+
             } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (JSONException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-
-            //update progress bar
-            for (int i=0;i<100;i++){
-                publishProgress(20);
-                try {
-                    Thread.sleep(30);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return bitmap;
+            return characterList;
         }
 
         @Override
-        protected void onPostExecute(Bitmap bitmap) {
-            super.onPostExecute(bitmap);
-            if (bitmap !=null){
-                imageView.setImageBitmap(bitmap);
-                Log.v("TAG", "Done set picture");
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        protected void onPostExecute(ArrayList<Characters> characters) {
+            super.onPostExecute(characters);
+            listView = findViewById(R.id.listView);
+            ArrayList<String> names = new ArrayList<>();
+            for (Characters x:characters){
+                names.add(x.getName());
+            }
+            ArrayAdapter adapter = new ArrayAdapter(
+                    MainActivity.this,
+                    android.R.layout.simple_list_item_1,
+                    names
+            );
+            listView.setAdapter(adapter);
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (findViewById(R.id.frameLayout)==null) {
+                        Intent intent = new Intent(MainActivity.this, DetailsStarWars.class);
+                        intent.putExtra("Character", characters.get(i));
+                        startActivity(intent);
+                    }
+                    else{
+                        DetailsFragment fragment = new DetailsFragment();
+                        Bundle bundle = new Bundle();
+                        bundle.putSerializable("Character",characters.get(i));
+                        fragment.setArguments(bundle);
+                        replaceFragment(fragment);
+                    }
                 }
-                callback.callBack(url);
-            }
-            else{
-                Toast.makeText(MainActivity.this, "Bitmap is null", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            if (progressBar.getProgress() == 2000) progressBar.setProgress(0);
-            progressBar.setProgress(progressBar.getProgress()+values[0]);
+            });
         }
     }
 
-
+    public void replaceFragment(DetailsFragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(R.id.frameLayout, fragment);
+        fragmentTransaction.commit();
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
