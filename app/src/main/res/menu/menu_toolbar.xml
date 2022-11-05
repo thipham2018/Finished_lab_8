@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/btn_toolbar_1"
+        app:showAsAction="always"
+        android:icon="@drawable/certificate_48"
+        android:title="TODO" />
+    <item android:id="@+id/btn_toolbar_2"
+        app:showAsAction="always"
+        android:icon="@drawable/baht_48"
+        android:title="TODO" />
+</menu>
